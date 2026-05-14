@@ -7,6 +7,11 @@ import crypto from "crypto";
 import cloudinary, { isCloudinaryConfigured } from "../config/cloudinary.js";
 
 const memoryStorage = multer.memoryStorage();
+const imageOnlyFilter = (req, file, cb) => {
+  const allowed = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+  if (allowed.includes(file.mimetype)) cb(null, true);
+  else cb(new Error("Unsupported file type"), false);
+};
 const upload = multer({
   storage: memoryStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -15,6 +20,12 @@ const upload = multer({
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Unsupported file type"), false);
   },
+});
+
+const avatarUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: imageOnlyFilter,
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +55,7 @@ const storeLocally = async (buffer, folder, originalName = "file", mimetype = "a
 
 export const uploadSingle = upload.single("attachment");
 export const uploadMultiple = upload.array("attachments", 5);
+export const uploadAvatar = avatarUpload.single("avatar");
 
 export const uploadBufferToCloudinary = async (buffer, folder = "ucms", originalName, mimetype) => {
   if (!isCloudinaryConfigured) {

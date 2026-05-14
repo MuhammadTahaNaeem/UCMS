@@ -22,6 +22,7 @@ import {
 } from "@/features/admin/adminApi";
 import { adminQueryKeys } from "@/features/admin/adminQueryKeys";
 import { useToast } from "@/components/ui/toast";
+import { isStaffEmail, isStrongPassword, staffEmailMessage, passwordMessage } from "@/features/auth/authSchemas";
 
 export default function StaffManagementPage() {
   const { toast } = useToast();
@@ -40,10 +41,18 @@ export default function StaffManagementPage() {
   });
 
   const staff = staffResponse?.data ?? [];
-  const departments = departmentResponse?.data ?? [];
-  const selectedDepartmentName = authUser?.department?.name || authUser?.department?.code || "Your department";
-  const visibleDepartments = authRole === "Admin" && authUser?.department?._id
-    ? departments.filter((department) => department._id === authUser.department._id)
+  const departments = React.useMemo(() => departmentResponse?.data ?? [], [departmentResponse?.data]);
+  const adminDepartmentId = React.useMemo(
+    () => authUser?.department?._id || authUser?.department || "",
+    [authUser?.department]
+  );
+  const selectedDepartment = React.useMemo(
+    () => departments.find((department) => department._id === adminDepartmentId),
+    [adminDepartmentId, departments]
+  );
+  const selectedDepartmentName = selectedDepartment?.name || authUser?.department?.name || authUser?.department?.code || "Your department";
+  const visibleDepartments = adminDepartmentId
+    ? departments.filter((department) => department._id === adminDepartmentId)
     : departments;
 
   const [form, setForm] = React.useState({
@@ -122,6 +131,11 @@ export default function StaffManagementPage() {
       return;
     }
 
+    if (!isStaffEmail(form.email)) {
+      toast({ title: "Invalid email", description: staffEmailMessage, variant: "destructive" });
+      return;
+    }
+
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
@@ -135,8 +149,8 @@ export default function StaffManagementPage() {
       return;
     }
 
-    if (!form.password || form.password.length < 6) {
-      toast({ title: "Invalid password", description: "Password must be at least 6 characters.", variant: "destructive" });
+    if (!isStrongPassword(form.password)) {
+      toast({ title: "Invalid password", description: passwordMessage, variant: "destructive" });
       return;
     }
 
@@ -171,7 +185,7 @@ export default function StaffManagementPage() {
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             <Input placeholder="Full name" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
             <Input placeholder="Email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
-            {authRole === "Admin" && authUser?.department?._id ? (
+            {adminDepartmentId ? (
               <Input value={selectedDepartmentName} disabled aria-label="Assigned department" />
             ) : (
               <Select
@@ -210,51 +224,51 @@ export default function StaffManagementPage() {
               description="Add staff members to start assigning approved complaints."
             />
           ) : (
-          <ScrollArea className="w-full whitespace-nowrap">
-          <Table className="min-w-220">
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border">
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ID</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Department</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {staff.map((s) => (
-                  <TableRow key={s._id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{s._id}</TableCell>
-                    <TableCell>{s.fullName}</TableCell>
-                    <TableCell>{s.email}</TableCell>
-                    <TableCell>{s.department?.name || "—"}</TableCell>
-                    <TableCell className="capitalize">
-                      {s.isActive ? (
-                        <Badge variant="secondary">active</Badge>
-                      ) : (
-                        <Badge variant="destructive">inactive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Open actions" />}>
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem onSelect={() => handleEdit(s)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => toggleMutation.mutate(s._id)}>
-                            {s.isActive ? "Set Inactive" : "Set Active"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => deleteMutation.mutate(s._id)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <Table className="min-w-220">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-border">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ID</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Department</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</TableHead>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-          </ScrollArea>
+                </TableHeader>
+                <TableBody>
+                  {staff.map((s) => (
+                    <TableRow key={s._id}>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{s._id}</TableCell>
+                      <TableCell>{s.fullName}</TableCell>
+                      <TableCell>{s.email}</TableCell>
+                      <TableCell>{s.department?.name || "—"}</TableCell>
+                      <TableCell className="capitalize">
+                        {s.isActive ? (
+                          <Badge variant="secondary">active</Badge>
+                        ) : (
+                          <Badge variant="destructive">inactive</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Open actions" />}>
+                            <MoreHorizontal className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onSelect={() => handleEdit(s)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => toggleMutation.mutate(s._id)}>
+                              {s.isActive ? "Set Inactive" : "Set Active"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => deleteMutation.mutate(s._id)}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           )}
         </div>
       </Card>

@@ -26,6 +26,11 @@ export const superAdminNavigation = [
     icon: UserPlus,
   },
   {
+    group: "Management",
+    label: "Settings",
+    href: "/super-admin/settings",
+  },
+  {
     group: "Account",
     label: "Profile",
     href: "/super-admin/profile",

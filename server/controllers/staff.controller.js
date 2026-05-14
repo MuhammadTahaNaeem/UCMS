@@ -44,6 +44,7 @@ export const completeComplaint = asyncHandler(async (req, res) => {
   const assignedToId = complaint.assignedTo?.toString?.();
   if (!assignedToId || assignedToId !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
   if (complaint.status !== "in_progress") return errorResponse(res, 400, "Complaint must be in progress before it can be resolved");
+  if (!complaint.proof || complaint.proof.length === 0) return errorResponse(res, 400, "Proof evidence is required before marking complaint as resolved");
   complaint.status = "resolved";
   complaint.resolvedAt = Date.now();
   complaint.timeline.push({ action: "resolved", performedBy: req.user._id, note: "Work resolved" });
@@ -63,7 +64,7 @@ export const uploadProof = asyncHandler(async (req, res) => {
   const assignedToId = complaint.assignedTo?.toString?.();
   if (!assignedToId || assignedToId !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
 
-  if (!req.file || !req.file.buffer) return errorResponse(res, 400, "File required");
+  if (!req.file || !req.file.buffer) return errorResponse(res, 400, "Proof evidence image is required");
   const result = await uploadBufferToCloudinary(req.file.buffer, `ucms/complaints/proof`, req.file.originalname, req.file.mimetype);
   complaint.proof.push({ public_id: result.public_id, url: result.secure_url, originalName: req.file.originalname, description: req.body.description || "" });
   complaint.timeline.push({ action: "proof_submitted", performedBy: req.user._id, note: req.body.description || "Proof submitted" });

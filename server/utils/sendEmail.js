@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 
 const emailTemplates = {
   verifyEmail: (verificationLink, fullName) => ({
-    subject: "Verify Your Email - UCMS",
+    subject: "Verify Your Email - University Complaint Management System",
     html: `
       <!DOCTYPE html>
       <html>
@@ -22,14 +22,14 @@ const emailTemplates = {
         <body>
           <div class="container">
             <div class="card">
-              <div class="header">UCMS - Email Verification</div>
+              <div class="header">University Complaint Management System - Email Verification</div>
               <p>Hi ${fullName},</p>
               <p>Thank you for registering with the University Complaint Management System. Please verify your email to activate your account.</p>
               <p><a href="${verificationLink}" class="button">Verify Email</a></p>
               <p>This link expires in 24 hours.</p>
               <div class="footer">
                 <p>If you did not register, please ignore this email.</p>
-                <p>&copy; 2026 UCMS. All rights reserved.</p>
+                <p>&copy; 2026 University Complaint Management System. All rights reserved.</p>
               </div>
             </div>
           </div>
@@ -39,7 +39,7 @@ const emailTemplates = {
   }),
 
   resetPassword: (resetLink, fullName) => ({
-    subject: "Reset Your Password - UCMS",
+    subject: "Reset Your Password - University Complaint Management System",
     html: `
       <!DOCTYPE html>
       <html>
@@ -62,7 +62,7 @@ const emailTemplates = {
               <p><a href="${resetLink}" class="button">Reset Password</a></p>
               <p>This link expires in 1 hour. If you did not request this, please ignore this email.</p>
               <div class="footer">
-                <p>&copy; 2026 UCMS. All rights reserved.</p>
+                <p>&copy; 2026 University Complaint Management System. All rights reserved.</p>
               </div>
             </div>
           </div>
@@ -72,7 +72,7 @@ const emailTemplates = {
   }),
 
   complaintUpdate: (fullName, complaintId, status, message) => ({
-    subject: `Complaint ${complaintId} Status Update - UCMS`,
+    subject: `Complaint ${complaintId} Status Update - University Complaint Management System`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -97,7 +97,7 @@ const emailTemplates = {
                 <span class="status">${status}</span>
               </p>
               <p><strong>Update:</strong><br>${message}</p>
-              <p>Log in to UCMS to view more details.</p>
+              <p>Log in to University Complaint Management System to view more details.</p>
               <div class="footer">
                 <p>&copy; 2026 UCMS. All rights reserved.</p>
               </div>
@@ -142,7 +142,7 @@ export const sendEmail = async (to, templateName, templateData) => {
     }
 
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'no-reply@ucms.local',
+      from: process.env.EMAIL_FROM || 'no-reply@ucms.university',
       to,
       subject: template.subject,
       html: template.html,

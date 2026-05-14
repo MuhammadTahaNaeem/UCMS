@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileDown, Pencil } from "lucide-react";
+import { ArrowLeft, FileDown, Image as ImageIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { statusClasses } from "@/constants/theme";
@@ -119,6 +119,36 @@ export function ComplaintDetailsPage() {
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground">No attachments uploaded.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border shadow-sm">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold">Resolution Proof</h2>
+              <div className="mt-4 space-y-3">
+                {complaint.proof?.length ? (
+                  complaint.proof.map((proof) => (
+                    <div key={proof.public_id || proof.url} className="rounded-lg border border-border p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{proof.originalName || "Proof image"}</p>
+                          <p className="text-xs text-muted-foreground">Submitted {formatDateTime(proof.submittedAt)}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={proof.url} target="_blank" rel="noreferrer">
+                            <ImageIcon className="size-4" />
+                            View
+                          </a>
+                        </Button>
+                      </div>
+                      {proof.description ? <p className="text-sm text-muted-foreground">{proof.description}</p> : null}
+                      <img src={proof.url} alt={proof.originalName || "Resolution proof"} className="max-h-72 w-full rounded-md object-cover" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No resolution proof has been submitted yet.</p>
                 )}
               </div>
             </div>

@@ -1,4 +1,4 @@
-const AUTH_STORAGE_KEY = "ucms_auth_state";
+export const AUTH_STORAGE_KEY = "ucms_auth_state";
 
 export function loadAuthState() {
   if (typeof window === "undefined") return undefined;

@@ -119,7 +119,11 @@ export default function AdminAssignmentBoardPage() {
                               onValueChange={(value) => setSelectedStaffByComplaint((prev) => ({ ...prev, [complaint._id]: value }))}
                             >
                               <SelectTrigger className="w-full max-w-xs">
-                                <SelectValue placeholder="Select staff" />
+                                <SelectValue placeholder="Select staff">
+                                  {selectedStaffId
+                                    ? complaintStaff.find((m) => m._id === selectedStaffId)?.fullName
+                                    : "Select staff"}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {complaintStaff.map((member) => (

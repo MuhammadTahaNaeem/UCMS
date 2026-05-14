@@ -5,10 +5,18 @@ import { generateToken } from "../utils/generateToken.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
+const studentEmailPattern = /^[^\s@]+@student\.ntu\.edu\.pk$/i;
+const strongPasswordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+const isStudentEmail = (email) => studentEmailPattern.test(String(email || "").trim());
+const isStrongPassword = (password) => strongPasswordPattern.test(String(password || ""));
+
 export const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
   if (!fullName || !email || !password) return errorResponse(res, 400, "Missing fields");
   const normalizedEmail = email.trim().toLowerCase();
+  if (!isStudentEmail(normalizedEmail)) return errorResponse(res, 400, "Student email must end with @student.ntu.edu.pk");
+  if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
   const exists = await User.findOne({ email: normalizedEmail });
   if (exists) return errorResponse(res, 409, "Email already registered");
 
@@ -103,6 +111,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const { password } = req.body;
   if (!token) return errorResponse(res, 400, "Token missing");
   if (!password) return errorResponse(res, 400, "Password required");
+  if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
 
   const hashed = crypto.createHash("sha256").update(token).digest("hex");
   const user = await User.findOne({ passwordResetToken: hashed, passwordResetExpires: { $gt: Date.now() } }).select(

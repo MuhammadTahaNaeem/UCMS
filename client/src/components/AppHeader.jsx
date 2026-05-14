@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Bell, ChevronRight, Menu } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,11 +15,20 @@ import {
 import { MobileSidebarSheet } from "@/components/AppSidebar";
 import { clearAuthState } from "@/features/auth/authStorage";
 import { logout } from "@/features/auth/authSlice";
+import {
+  clearReadNotifications,
+  clearNotification,
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "@/features/notifications/notificationsApi";
+import { resolveNotificationHref } from "@/features/notifications/notificationUtils";
 
 export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const user = useSelector((state) => state.auth.user);
 
   const userName = user?.fullName || user?.name || user?.email || roleName;
@@ -69,7 +79,51 @@ export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
     navigate("/login", { replace: true });
   };
 
-  const unreadCount = 2;
+  const { data: notificationResponse } = useQuery({
+    queryKey: ["notifications", rolePrefix, user?._id],
+    queryFn: () => fetchNotifications({ limit: 5 }),
+    enabled: Boolean(user?._id),
+    refetchInterval: 30000,
+  });
+
+  const notifications = notificationResponse?.data ?? [];
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", rolePrefix, user?._id] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", rolePrefix, user?._id] });
+    },
+  });
+
+  const clearReadMutation = useMutation({
+    mutationFn: clearReadNotifications,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", rolePrefix, user?._id] });
+    },
+  });
+
+  const clearNotificationMutation = useMutation({
+    mutationFn: clearNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", rolePrefix, user?._id] });
+    },
+  });
+
+  const openNotification = (notification) => {
+    const target = resolveNotificationHref(notification, rolePrefix);
+    if (!notification.isRead) {
+      markReadMutation.mutate(notification._id);
+    }
+    navigate(target);
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60 lg:px-6">
@@ -115,20 +169,88 @@ export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
       </nav>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          className="relative"
-          aria-label="Open notifications"
-        >
-          <Link to={`${rolePrefix}/notifications`}>
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-              {unreadCount}
-            </span>
-          </Link>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative" aria-label="Open notifications">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 rounded-2xl border-border p-2">
+            <div className="px-3 py-2">
+              <p className="text-sm font-semibold text-foreground">Notifications</p>
+              <p className="text-xs text-muted-foreground">Latest updates for your account</p>
+            </div>
+            <DropdownMenuSeparator />
+            <div className="flex gap-2 px-3 pb-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 flex-1"
+                disabled={markAllReadMutation.isPending || !notifications.length}
+                onClick={() => markAllReadMutation.mutate()}
+              >
+                Mark all read
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-8 flex-1"
+                disabled={clearReadMutation.isPending || notifications.every((notification) => !notification.isRead)}
+                onClick={() => clearReadMutation.mutate()}
+              >
+                Clear read
+              </Button>
+            </div>
+            {notifications.length ? (
+              notifications.map((notification) => (
+                <DropdownMenuItem
+                  key={notification._id}
+                  className="flex flex-col items-start gap-1 rounded-xl px-3 py-2"
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    openNotification(notification);
+                  }}
+                >
+                  <span className="text-sm font-medium text-foreground">{notification.title}</span>
+                  <span className="line-clamp-2 text-left text-xs text-muted-foreground">{notification.message}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {!notification.isRead ? "New" : "Read"}
+                  </span>
+                  {notification.isRead ? (
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-destructive hover:underline"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        clearNotificationMutation.mutate(notification._id);
+                      }}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-sm text-muted-foreground">No notifications yet.</div>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="justify-center rounded-xl px-3 py-2 font-medium"
+              onSelect={(event) => {
+                event.preventDefault();
+                navigate(`${rolePrefix}/notifications`);
+              }}
+            >
+              View all notifications
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

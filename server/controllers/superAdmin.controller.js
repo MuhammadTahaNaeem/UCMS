@@ -2,7 +2,15 @@ import asyncHandler from "../utils/asyncHandler.js";
 import User from "../models/User.model.js";
 import Complaint from "../models/Complaint.model.js";
 import Department from "../models/Department.model.js";
+import Settings from "../models/Settings.model.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
+import { uploadBufferToCloudinary } from "../middleware/upload.middleware.js";
+
+const staffEmailPattern = /^[^\s@]+@ntu\.edu\.pk$/i;
+const strongPasswordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+const isStaffEmail = (email) => staffEmailPattern.test(String(email || "").trim());
+const isStrongPassword = (password) => strongPasswordPattern.test(String(password || ""));
 
 const buildDepartmentCode = (name) => {
   const base = name
@@ -51,6 +59,8 @@ export const promoteToAdmin = asyncHandler(async (req, res) => {
   // Otherwise create a new Admin user
   if (!fullName || !email || !password) return errorResponse(res, 400, "Missing fields");
   const normalizedEmail = email.trim().toLowerCase();
+  if (!isStaffEmail(normalizedEmail)) return errorResponse(res, 400, "Staff/Admin email must end with @ntu.edu.pk");
+  if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
   const exists = await User.findOne({ email: normalizedEmail });
   if (exists) return errorResponse(res, 409, "Email already exists");
   const admin = await User.create({ fullName, email: normalizedEmail, password, role: "Admin", department, isEmailVerified: true });
@@ -88,6 +98,8 @@ export const createDepartmentAdmin = asyncHandler(async (req, res) => {
   if (!resolvedDepartment) return errorResponse(res, 404, "Department not found");
 
   const normalizedEmail = email.trim().toLowerCase();
+  if (!isStaffEmail(normalizedEmail)) return errorResponse(res, 400, "Staff/Admin email must end with @ntu.edu.pk");
+  if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) return errorResponse(res, 409, "Email already exists");
 
@@ -109,10 +121,52 @@ export const createDepartmentAdmin = asyncHandler(async (req, res) => {
   return successResponse(res, 201, "Department admin created", createdAdmin);
 });
 
+export const getSettings = asyncHandler(async (req, res) => {
+  let settings = await Settings.findOne();
+  if (!settings) {
+    settings = await Settings.create({ systemName: "University Complaint Management System" });
+  }
+  return successResponse(res, 200, "System settings", settings);
+});
+
+export const uploadLogo = asyncHandler(async (req, res) => {
+  if (!req.file || !req.file.buffer) return errorResponse(res, 400, "Logo file is required");
+  
+  let settings = await Settings.findOne();
+  if (!settings) {
+    settings = new Settings({ systemName: "University Complaint Management System" });
+  }
+
+  const result = await uploadBufferToCloudinary(req.file.buffer, "ucms/branding", req.file.originalname, req.file.mimetype);
+  settings.logo = { public_id: result.public_id, url: result.secure_url, originalName: req.file.originalname };
+  await settings.save();
+
+  return successResponse(res, 200, "Logo uploaded successfully", settings);
+});
+
+export const updateSystemSettings = asyncHandler(async (req, res) => {
+  const { systemName, description, supportEmail } = req.body;
+  
+  let settings = await Settings.findOne();
+  if (!settings) {
+    settings = new Settings({ systemName: "University Complaint Management System" });
+  }
+
+  if (systemName) settings.systemName = systemName;
+  if (description !== undefined) settings.description = description;
+  if (supportEmail !== undefined) settings.supportEmail = supportEmail;
+  
+  await settings.save();
+  return successResponse(res, 200, "Settings updated", settings);
+});
+
 export default {
   getAllAdmins,
   getGlobalActivity,
   promoteToAdmin,
   createDepartment,
   createDepartmentAdmin,
+  getSettings,
+  uploadLogo,
+  updateSystemSettings,
 };

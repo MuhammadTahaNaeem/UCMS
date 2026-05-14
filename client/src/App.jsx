@@ -11,6 +11,7 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { EmailVerificationPage } from "@/features/auth/pages/EmailVerificationPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { NotificationsPage } from "@/features/notifications/NotificationsPage";
 
 // User pages
 import { UserLayout } from "@/features/user/components/UserLayout";
@@ -27,7 +28,6 @@ import AdminComplaintsQueuePage from "@/features/admin/pages/AdminComplaintsQueu
 import AdminAssignmentBoardPage from "@/features/admin/pages/AdminAssignmentBoardPage";
 import StaffManagementPage from "@/features/admin/pages/StaffManagementPage";
 import AssignedComplaintsPage from "@/features/staff/pages/AssignedComplaintsPage";
-import { NotificationsPage } from "@/features/user/pages/NotificationsPage";
 import AdminComplaintDetailPage from "@/features/admin/pages/AdminComplaintDetailPage";
 import StaffComplaintDetailPage from "@/features/staff/pages/StaffComplaintDetailPage";
 
@@ -45,6 +45,7 @@ import { SuperAdminAdminsPage } from "@/features/super-admin/pages/SuperAdminAdm
 import { SuperAdminActivityPage } from "@/features/super-admin/pages/SuperAdminActivityPage";
 import SuperAdminDepartmentsPage from "@/features/super-admin/pages/SuperAdminDepartmentsPage";
 import SuperAdminDepartmentAdminsPage from "@/features/super-admin/pages/SuperAdminDepartmentAdminsPage";
+import SuperAdminSettingsPage from "@/features/super-admin/pages/SuperAdminSettingsPage";
 
 const App = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -82,6 +83,10 @@ const App = () => {
               path="complaints/:id"
               element={<AdminComplaintDetailPage />}
             />
+            <Route
+              path="notifications"
+              element={<NotificationsPage rolePrefix="/admin" title="Notifications" subtitle="New complaints and complaint updates" />}
+            />
             <Route path="staff" element={<StaffManagementPage />} />
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="profile" element={<AdminProfilePage />} />
@@ -96,8 +101,13 @@ const App = () => {
             <Route path="admins" element={<SuperAdminAdminsPage />} />
             <Route path="departments" element={<SuperAdminDepartmentsPage />} />
             <Route path="department-admins" element={<SuperAdminDepartmentAdminsPage />} />
+            <Route path="settings" element={<SuperAdminSettingsPage />} />
             <Route path="profile" element={<AdminProfilePage />} />
             <Route path="activity" element={<SuperAdminActivityPage />} />
+            <Route
+              path="notifications"
+              element={<NotificationsPage rolePrefix="/super-admin" title="Notifications" subtitle="Platform updates and complaint activity" />}
+            />
           </Route>
         </Route>
 
@@ -113,6 +123,10 @@ const App = () => {
             />
             <Route path="assigned" element={<AssignedComplaintsPage />} />
             <Route path="profile" element={<StaffProfilePage />} />
+            <Route
+              path="notifications"
+              element={<NotificationsPage rolePrefix="/staff" title="Notifications" subtitle="Complaint assignments and work updates" />}
+            />
           </Route>
         </Route>
 
@@ -125,7 +139,10 @@ const App = () => {
             <Route path="complaints/create" element={<CreateComplaintPage />} />
             <Route path="complaints/:id" element={<ComplaintDetailsPage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
+            <Route
+              path="notifications"
+              element={<NotificationsPage rolePrefix="/user" title="Notifications" subtitle="Complaint approvals, rejections, and progress updates" />}
+            />
           </Route>
         </Route>
 

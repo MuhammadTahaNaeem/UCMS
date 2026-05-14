@@ -6,6 +6,12 @@ import Notification from "../models/Notification.model.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 import { getIO } from "../socket/socket.js";
 
+const staffEmailPattern = /^[^\s@]+@ntu\.edu\.pk$/i;
+const strongPasswordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+const isStaffEmail = (email) => staffEmailPattern.test(String(email || "").trim());
+const isStrongPassword = (password) => strongPasswordPattern.test(String(password || ""));
+
 export const getAllComplaints = asyncHandler(async (req, res) => {
   let query = {};
   // If the user is an Admin (not SuperAdmin), restrict to their department
@@ -34,7 +40,7 @@ export const getComplaintDetail = asyncHandler(async (req, res) => {
   // Departmental admin restriction
   if (req.user.role === "Admin") {
     if (!req.user.department) return errorResponse(res, 403, "Admin user has no department assigned");
-    if (complaint.department.toString() !== req.user.department.toString()) return errorResponse(res, 403, "Forbidden");
+    if (complaint.department._id.toString() !== req.user.department.toString()) return errorResponse(res, 403, "Forbidden");
   }
   return successResponse(res, 200, "Complaint detail", complaint);
 });
@@ -144,6 +150,8 @@ export const getStaff = asyncHandler(async (req, res) => {
 export const createStaff = asyncHandler(async (req, res) => {
   const { fullName, email, password, department } = req.body;
   if (!fullName || !email || !password) return errorResponse(res, 400, "Missing fields");
+  if (!isStaffEmail(email)) return errorResponse(res, 400, "Staff/Admin email must end with @ntu.edu.pk");
+  if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
 
   let targetDepartment = department;
   if (req.user.role === "Admin") {
@@ -186,11 +194,15 @@ export const updateStaff = asyncHandler(async (req, res) => {
   if (fullName !== undefined) staff.fullName = fullName;
   if (email !== undefined) {
     const normalizedEmail = email.trim().toLowerCase();
+    if (!isStaffEmail(normalizedEmail)) return errorResponse(res, 400, "Staff/Admin email must end with @ntu.edu.pk");
     const duplicate = await User.findOne({ email: normalizedEmail, _id: { $ne: staff._id } });
     if (duplicate) return errorResponse(res, 409, "Email already exists");
     staff.email = normalizedEmail;
   }
-  if (password) staff.password = password;
+  if (password) {
+    if (!isStrongPassword(password)) return errorResponse(res, 400, "Password must be at least 8 characters and include letters, numbers, and symbols");
+    staff.password = password;
+  }
   if (department !== undefined && req.user.role !== "Admin") staff.department = department || undefined;
   if (isActive !== undefined) staff.isActive = isActive;
 

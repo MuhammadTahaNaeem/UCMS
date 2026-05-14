@@ -42,7 +42,13 @@ export function fetchUserProfile() {
 }
 
 export function updateUserProfile(payload) {
-  return unwrap(apiClient.put("/user/profile", payload));
+  const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
+
+  return unwrap(
+    apiClient.put("/user/profile", payload, {
+      headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    })
+  );
 }
 
 export function fetchUserNotifications() {

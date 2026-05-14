@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { LogOut } from "lucide-react";
+import { ImagePlus, LogOut } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { apiClient } from "@/lib/apiClient";
+import { useToast } from "@/components/ui/toast";
 import { clearAuthState } from "@/features/auth/authStorage";
 import { logout } from "@/features/auth/authSlice";
 
@@ -20,6 +23,66 @@ function SidebarPanel({
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const logoInputRef = useRef(null);
+
+  const { data: settingsResponse } = useQuery({
+    queryKey: ["public", "settings"],
+    queryFn: async () => {
+      const response = await apiClient.get("/public/settings");
+      return response.data;
+    },
+  });
+
+  const branding = settingsResponse?.data;
+  const systemName = branding?.systemName || "University Complaint Management System";
+  const logoUrl = branding?.logo?.url || "";
+  const isSuperAdmin = roleName === "SuperAdmin";
+
+  const uploadLogoMutation = useMutation({
+    mutationFn: async (file) => {
+      const formData = new FormData();
+      formData.append("attachment", file);
+      const response = await apiClient.post("/super/settings/logo", formData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["public", "settings"] });
+      queryClient.invalidateQueries({ queryKey: ["super-admin", "settings"] });
+      toast({ title: "Logo uploaded", description: "System logo updated successfully." });
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload failed",
+        description: error?.response?.data?.message || "Unable to upload logo.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLogoClick = () => {
+    if (!isSuperAdmin) return;
+    logoInputRef.current?.click();
+  };
+
+  const handleLogoAreaClick = () => {
+    if (isSuperAdmin) {
+      handleLogoClick();
+      return;
+    }
+    navigate(`${rolePrefix}/dashboard`);
+    onNavigate?.();
+  };
+
+  const handleLogoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    uploadLogoMutation.mutate(file);
+  };
 
   const userName = user?.fullName || user?.name || user?.email || roleName;
   const userEmail = user?.email || `${roleName.toLowerCase()}@ucms.local`;
@@ -66,19 +129,44 @@ function SidebarPanel({
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-        <Link
-          to={`${rolePrefix}/dashboard`}
-          className="flex min-w-0 items-center gap-3"
-          onClick={() => onNavigate?.()}
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            UC
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">UCMS</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            className="group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background"
+            onClick={handleLogoAreaClick}
+            aria-label={isSuperAdmin ? "Upload logo" : "Go to dashboard"}
+          >
+            {logoUrl ? (
+              <img src={logoUrl} alt={systemName} className="h-full w-full object-contain p-1" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-primary text-[11px] font-bold text-primary-foreground">
+                UCM
+              </div>
+            )}
+            {isSuperAdmin ? (
+              <span className="absolute inset-0 flex items-center justify-center bg-background/75 opacity-0 transition-opacity group-hover:opacity-100">
+                <ImagePlus className="h-4 w-4 text-foreground" />
+              </span>
+            ) : null}
+          </button>
+          {isSuperAdmin ? (
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoChange}
+            />
+          ) : null}
+          <Link
+            to={`${rolePrefix}/dashboard`}
+            className="min-w-0"
+            onClick={() => onNavigate?.()}
+          >
+            <p className="text-sm font-semibold text-foreground">{systemName}</p>
             <p className="truncate text-xs text-muted-foreground">Complaints</p>
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-3">

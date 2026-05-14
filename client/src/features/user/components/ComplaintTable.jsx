@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/features/user/components/StatusBadge";
 import { formatDate } from "@/features/user/utils";
@@ -74,7 +75,10 @@ export function ComplaintTable({ complaints = [], isLoading = false, emptyState,
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 rounded-2xl border-border p-2">
-                      <DropdownMenuItem onSelect={() => navigate(`/user/complaints/${complaint.id}`)} className="rounded-xl px-3 py-2">
+                      <DropdownMenuItem
+                        render={<Link to={`/user/complaints/${complaint.id}`} />}
+                        className="rounded-xl px-3 py-2"
+                      >
                         <Eye className="size-4" />
                         View
                       </DropdownMenuItem>

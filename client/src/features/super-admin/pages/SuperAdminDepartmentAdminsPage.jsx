@@ -3,12 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { PageShell } from "@/components/shared/PageShell";
 import { EmptyState, TableRowsSkeleton } from "@/components/shared";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { createSuperDepartmentAdmin, fetchAllDepartments, fetchSuperAdminAdmins } from "@/features/super-admin/superAdminApi";
+import { isStaffEmail, isStrongPassword, staffEmailMessage, passwordMessage } from "@/features/auth/authSchemas";
 
 export default function SuperAdminDepartmentAdminsPage() {
   const { toast } = useToast();
@@ -24,10 +25,14 @@ export default function SuperAdminDepartmentAdminsPage() {
     queryFn: fetchAllDepartments,
   });
 
+  const [form, setForm] = React.useState({ fullName: "", email: "", password: "", department: "" });
+
   const admins = adminsData?.data ?? [];
   const departments = departmentsData?.data ?? [];
-
-  const [form, setForm] = React.useState({ fullName: "", email: "", password: "", department: "" });
+  const selectedDepartment = React.useMemo(
+    () => departments.find((department) => department._id === form.department),
+    [departments, form.department]
+  );
 
   const mutation = useMutation({
     mutationFn: createSuperDepartmentAdmin,
@@ -48,6 +53,16 @@ export default function SuperAdminDepartmentAdminsPage() {
   const handleSubmit = () => {
     if (!form.fullName.trim() || !form.email.trim() || !form.password.trim() || !form.department) {
       toast({ title: "Missing fields", description: "Provide name, email, password and department.", variant: "destructive" });
+      return;
+    }
+
+    if (!isStaffEmail(form.email)) {
+      toast({ title: "Invalid email", description: staffEmailMessage, variant: "destructive" });
+      return;
+    }
+
+    if (!isStrongPassword(form.password)) {
+      toast({ title: "Invalid password", description: passwordMessage, variant: "destructive" });
       return;
     }
 
@@ -72,7 +87,11 @@ export default function SuperAdminDepartmentAdminsPage() {
             <Input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
             <Select value={form.department || "all"} onValueChange={(value) => setForm((f) => ({ ...f, department: value === "all" ? "" : value }))}>
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                {selectedDepartment ? (
+                  <span className="truncate font-medium">{selectedDepartment.name}</span>
+                ) : (
+                  <span className="text-muted-foreground">Select department</span>
+                )}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Select department</SelectItem>

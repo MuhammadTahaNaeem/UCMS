@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
+import { FileDown, Image as ImageIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -154,6 +155,68 @@ export default function AdminComplaintDetailPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">User Attachments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {complaint.attachments?.length ? (
+                <div className="space-y-3">
+                  {complaint.attachments.map((attachment) => (
+                    <div key={attachment.public_id || attachment.url} className="rounded-lg border border-border p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{attachment.originalName || "Attachment"}</p>
+                          <p className="text-xs text-muted-foreground">{attachment.fileType || "file"}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={attachment.url} target="_blank" rel="noreferrer">
+                            <FileDown className="size-4" />
+                            Open
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No attachments were uploaded with this complaint.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Resolution Proof</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {complaint.proof?.length ? (
+                <div className="space-y-4">
+                  {complaint.proof.map((proof) => (
+                    <div key={proof.public_id || proof.url} className="rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{proof.originalName || "Proof image"}</p>
+                          <p className="text-xs text-muted-foreground">Submitted {formatDate(proof.submittedAt)}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={proof.url} target="_blank" rel="noreferrer">
+                            <ImageIcon className="size-4" />
+                            View
+                          </a>
+                        </Button>
+                      </div>
+                      {proof.description ? <p className="text-sm text-muted-foreground">{proof.description}</p> : null}
+                      <img src={proof.url} alt={proof.originalName || "Proof image"} className="max-h-64 w-full rounded-md object-cover" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No proof has been submitted yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
           {complaint.assignedTo ? (
             <Card>
               <CardHeader>
@@ -205,7 +268,11 @@ export default function AdminComplaintDetailPage() {
                     <div className="flex flex-col gap-2">
                       <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select staff to assign" />
+                          <SelectValue placeholder="Select staff to assign">
+                            {selectedStaffId
+                              ? availableStaff.find((m) => m._id === selectedStaffId)?.fullName
+                              : "Select staff to assign"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {availableStaff.map((member) => (

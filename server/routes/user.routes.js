@@ -7,13 +7,14 @@ import {
   markNotificationRead,
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { uploadAvatar } from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
 router.get("/profile", getUserProfile);
-router.put("/profile", updateUserProfile);
+router.put("/profile", uploadAvatar, updateUserProfile);
 router.get("/dashboard", getUserDashboard);
 router.get("/notifications", getUserNotifications);
 router.patch("/notifications/:id/read", markNotificationRead);

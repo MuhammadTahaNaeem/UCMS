@@ -97,7 +97,7 @@ export const getComplaintById = asyncHandler(async (req, res) => {
   // Admins are restricted to their department unless SuperAdmin
   if (req.user.role === "Admin") {
     if (!req.user.department) return errorResponse(res, 403, "Admin user has no department assigned");
-    if (complaint.department.toString() !== req.user.department.toString()) return errorResponse(res, 403, "Forbidden");
+    if (complaint.department._id.toString() !== req.user.department.toString()) return errorResponse(res, 403, "Forbidden");
   }
   
   return successResponse(res, 200, "Complaint fetched", complaint);

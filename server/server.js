@@ -18,6 +18,8 @@ import adminRoutes from "./routes/admin.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import superAdminRoutes from "./routes/superAdmin.routes.js";
+import publicRoutes from "./routes/public.routes.js";
+import notificationRoutes from "./routes/notifications.routes.js";
 
 dotenv.config();
 
@@ -40,10 +42,12 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => res.json({ success: true, message: "UCMS API running" }));
+app.get("/", (req, res) => res.json({ success: true, message: "University Complaint Management System API running" }));
 
+app.use("/api/public", publicRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/staff", staffRoutes);
