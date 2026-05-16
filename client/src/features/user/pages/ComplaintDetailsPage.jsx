@@ -91,7 +91,7 @@ export function ComplaintDetailsPage() {
 
         {displayStatus === "Pending" ? (
           <Button
-            render={<Link to="/user/complaints/create" state={{ mode: "edit", complaint: { id: complaint._id, title: complaint.title, department: complaint.department?.name, description: complaint.description } }} />}
+            render={<Link to="/user/complaints/create" state={{ mode: "edit", complaint: { id: complaint._id, complaintId: complaint.complaintId, title: complaint.title, department: complaint.department?.name, description: complaint.description } }} />}
           >
             <Pencil className="size-4" />
             Edit Complaint

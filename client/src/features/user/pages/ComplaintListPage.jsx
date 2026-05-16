@@ -31,8 +31,8 @@ export function ComplaintListPage() {
   ];
 
   const mappedComplaints = complaints.map((item) => ({
-    id: item._id,
-    displayId: item.complaintId || item._id,
+    id: item.complaintId || item._id,
+    recordId: item._id,
     title: item.title,
     department: item.department?.name || "—",
     status: normalizeStatus(item.status),
@@ -47,20 +47,21 @@ export function ComplaintListPage() {
     const query = search.trim().toLowerCase();
     const matchesSearch =
       query.length === 0 ||
-      item.displayId.toLowerCase().includes(query) ||
+      item.id.toLowerCase().includes(query) ||
       item.title.toLowerCase().includes(query);
 
     return matchesStatus && matchesDepartment && matchesSearch;
   });
 
   const handleEdit = (complaint) => {
-    const source = complaints.find((item) => item._id === complaint.id);
+    const source = complaints.find((item) => item._id === complaint.recordId);
     if (!source) return;
     navigate("/user/complaints/create", {
       state: {
         mode: "edit",
         complaint: {
           id: source._id,
+          complaintId: source.complaintId,
           title: source.title,
           department: source.department?.name || "",
           description: source.description,
@@ -130,6 +131,7 @@ export function ComplaintListPage() {
       <ComplaintTable
         complaints={filteredComplaints.map((item) => ({
           id: item.id,
+          recordId: item.recordId,
           title: item.title,
           department: item.department,
           status: item.status,

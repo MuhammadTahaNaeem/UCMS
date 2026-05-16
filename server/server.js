@@ -35,11 +35,12 @@ app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const corsOptions =
+  process.env.NODE_ENV === "production"
+    ? { origin: CLIENT_ORIGIN, credentials: true }
+    : { origin: true, credentials: true };
 app.use(
-  cors({
-    origin: CLIENT_ORIGIN,
-    credentials: true,
-  })
+  cors(corsOptions)
 );
 
 app.get("/", (req, res) => res.json({ success: true, message: "University Complaint Management System API running" }));

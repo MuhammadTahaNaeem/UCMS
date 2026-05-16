@@ -93,7 +93,7 @@ export function UserDashboardPage() {
                     <TableRow
                       key={item._id}
                       className="cursor-pointer border-border transition-colors hover:bg-muted/50"
-                      onClick={() => navigate(`/user/complaints/${item._id}`)}
+                      onClick={() => navigate(`/user/complaints/${item.complaintId || item._id}`)}
                     >
                       <TableCell className="font-mono text-xs text-muted-foreground">{item.complaintId || item._id}</TableCell>
                       <TableCell className="text-sm text-foreground">{item.title}</TableCell>
@@ -103,7 +103,7 @@ export function UserDashboardPage() {
                         <StatusBadge status={item.status} />
                       </TableCell>
                       <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                        <Button variant="ghost" size="sm" render={<Link to={`/user/complaints/${item._id}`} />}>
+                        <Button variant="ghost" size="sm" render={<Link to={`/user/complaints/${item.complaintId || item._id}`} />}>
                           View
                         </Button>
                       </TableCell>

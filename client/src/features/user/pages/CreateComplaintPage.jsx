@@ -37,12 +37,12 @@ export function CreateComplaintPage() {
           description: "Your complaint has been updated successfully.",
         });
 
-        navigate(`/user/complaints/${existingComplaint.id}`, { replace: true });
+        navigate(`/user/complaints/${existingComplaint.complaintId || existingComplaint.id}`, { replace: true });
         return;
       }
 
       const response = await createMutation.mutateAsync(payload);
-      const createdId = response?.data?._id;
+      const createdId = response?.data?.complaintId || response?.data?._id;
 
       toast({
         title: "Complaint submitted",
