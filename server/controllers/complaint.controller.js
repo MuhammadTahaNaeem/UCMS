@@ -21,13 +21,19 @@ export const createComplaint = asyncHandler(async (req, res) => {
   // Only users can create complaints
   if (req.user.role !== "User") return errorResponse(res, 403, "Only users can create complaints");
   
-  const { title, description, department } = req.body;
+  const { title, description, department, suggestedPriority } = req.body;
   if (!title || !description || !department) return errorResponse(res, 400, "Missing required fields");
 
   const dept = await resolveDepartmentInput(department);
   if (!dept) return errorResponse(res, 400, "Invalid department selected");
 
-  const complaint = new Complaint({ title, description, department: dept._id, submittedBy: req.user._id });
+  const complaint = new Complaint({ 
+    title, 
+    description, 
+    department: dept._id, 
+    submittedBy: req.user._id,
+    suggestedPriority: suggestedPriority || "medium"
+  });
 
   // Handle file upload
   if (req.file && req.file.buffer) {
@@ -151,4 +157,33 @@ export const getMyPendingComplaints = asyncHandler(async (req, res) => {
     .populate("department assignedTo assignedBy")
     .sort({ createdAt: -1 });
   return successResponse(res, 200, "Pending complaints fetched", complaints);
+});
+
+export const suggestPriority = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+
+  if (!priority) return errorResponse(res, 400, "Priority is required");
+  if (!["low", "medium", "high", "urgent"].includes(priority)) {
+    return errorResponse(res, 400, "Invalid priority value");
+  }
+
+  const complaint = await Complaint.findById(id);
+  if (!complaint) return errorResponse(res, 404, "Complaint not found");
+
+  // Only the user who submitted the complaint can suggest priority
+  if (complaint.submittedBy.toString() !== req.user._id.toString()) {
+    return errorResponse(res, 403, "Only the complaint submitter can suggest priority");
+  }
+
+  complaint.suggestedPriority = priority;
+  complaint.timeline.push({
+    action: "priority_suggested",
+    performedBy: req.user._id,
+    note: `Suggested priority: ${priority}`,
+  });
+
+  await complaint.save();
+
+  return successResponse(res, 200, "Priority suggested", complaint);
 });

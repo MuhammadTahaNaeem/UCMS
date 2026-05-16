@@ -20,6 +20,7 @@ export function CreateComplaintPage() {
     title: existingComplaint?.title ?? "",
     department: existingComplaint?.department ?? "",
     description: existingComplaint?.description ?? "",
+    suggestedPriority: existingComplaint?.suggestedPriority ?? "medium",
     attachment: undefined,
   };
 

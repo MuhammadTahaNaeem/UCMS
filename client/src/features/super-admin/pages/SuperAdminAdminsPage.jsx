@@ -10,7 +10,7 @@ import { fetchSuperAdminAdmins } from "@/features/super-admin/superAdminApi";
 const getDepartmentLabel = (department) => {
   if (!department) return "—";
   if (typeof department === "string") return department;
-  return department.name ? `${department.name} • ${department._id}` : department._id || "—";
+  return department.name || "—";
 };
 
 export function SuperAdminAdminsPage() {

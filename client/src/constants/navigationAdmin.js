@@ -3,7 +3,7 @@ import {
   ListChecks,
   Users,
   BarChart3,
-  User,
+  UserCircle2,
   UserCog,
 } from "lucide-react";
 
@@ -39,9 +39,9 @@ export const adminNavigation = [
     icon: BarChart3,
   },
   {
-    group: "Account",
+    group: "Account Settings",
     label: "Profile",
     href: "/admin/profile",
-    icon: User,
+    icon: UserCircle2,
   },
 ];

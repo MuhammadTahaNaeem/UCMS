@@ -5,6 +5,7 @@ import {
   getComplaintDetail,
   approveComplaint,
   rejectComplaint,
+  updatePriority,
   assignComplaint,
   getStaff,
   createStaff,
@@ -27,6 +28,7 @@ router.get("/dashboard", getDashboard);
 router.get("/complaints", getAllComplaints);
 router.get("/complaints/pending", getPendingQueue);
 router.get("/complaints/:id", getComplaintDetail);
+router.patch("/complaints/:id/priority", updatePriority);
 router.post("/complaints/:id/approve", approveComplaint);
 router.post("/complaints/:id/reject", rejectComplaint);
 router.post("/complaints/:id/assign", assignComplaint);

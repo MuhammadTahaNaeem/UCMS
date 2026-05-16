@@ -26,8 +26,7 @@ export function ComplaintForm({ defaultValues, onSubmit, isSubmitting = false, s
     defaultValues: defaultValues ?? {
       title: "",
       department: "",
-      description: "",
-      attachment: undefined,
+      description: "",      suggestedPriority: "medium",      attachment: undefined,
     },
   });
 
@@ -76,6 +75,46 @@ export function ComplaintForm({ defaultValues, onSubmit, isSubmitting = false, s
 
           <FormFieldWrapper label="Description" htmlFor="description" required error={form.formState.errors.description?.message} hint="Include key context, dates, and any supporting details.">
             <Textarea id="description" placeholder="Describe the issue in detail" className="min-h-32" {...form.register("description")} />
+          </FormFieldWrapper>
+
+          <FormFieldWrapper label="Suggested Priority" htmlFor="suggestedPriority" hint="Help admins understand the urgency of your complaint.">
+            <Controller
+              control={form.control}
+              name="suggestedPriority"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="suggestedPriority" className="w-full">
+                    <SelectValue placeholder="Select priority level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
+                        Low
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-yellow-500"></span>
+                        Medium
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="high">
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-orange-500"></span>
+                        High
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="urgent">
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>
+                        Critical
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormFieldWrapper>
 
           <div className="space-y-2">

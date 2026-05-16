@@ -117,14 +117,6 @@ export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
     },
   });
 
-  const openNotification = (notification) => {
-    const target = resolveNotificationHref(notification, rolePrefix);
-    if (!notification.isRead) {
-      markReadMutation.mutate(notification._id);
-    }
-    navigate(target);
-  };
-
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60 lg:px-6">
       <MobileSidebarSheet
@@ -207,35 +199,40 @@ export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
               </Button>
             </div>
             {notifications.length ? (
-              notifications.map((notification) => (
-                <DropdownMenuItem
-                  key={notification._id}
-                  className="flex flex-col items-start gap-1 rounded-xl px-3 py-2"
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    openNotification(notification);
-                  }}
-                >
-                  <span className="text-sm font-medium text-foreground">{notification.title}</span>
-                  <span className="line-clamp-2 text-left text-xs text-muted-foreground">{notification.message}</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {!notification.isRead ? "New" : "Read"}
-                  </span>
-                  {notification.isRead ? (
-                    <button
-                      type="button"
-                      className="text-[11px] font-medium text-destructive hover:underline"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        clearNotificationMutation.mutate(notification._id);
-                      }}
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </DropdownMenuItem>
-              ))
+              notifications.map((notification) => {
+                const notificationHref = resolveNotificationHref(notification, rolePrefix);
+                return (
+                  <DropdownMenuItem
+                    key={notification._id}
+                    className="flex flex-col items-start gap-1 rounded-xl px-3 py-2 cursor-pointer"
+                    onClick={() => {
+                      if (!notification.isRead) {
+                        markReadMutation.mutate(notification._id);
+                      }
+                      navigate(notificationHref);
+                    }}
+                  >
+                    <span className="text-sm font-medium text-foreground">{notification.title}</span>
+                    <span className="line-clamp-2 text-left text-xs text-muted-foreground">{notification.message}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {!notification.isRead ? "New" : "Read"}
+                    </span>
+                    {notification.isRead ? (
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-destructive hover:underline"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          clearNotificationMutation.mutate(notification._id);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                  </DropdownMenuItem>
+                );
+              })
             ) : (
               <div className="px-3 py-4 text-sm text-muted-foreground">No notifications yet.</div>
             )}
@@ -260,7 +257,7 @@ export function AppHeader({ roleName, rolePrefix, navItems = [] }) {
               aria-label="Open user menu"
             >
               <Avatar className="h-8 w-8 border border-border">
-                <AvatarImage src={user?.avatarUrl || ""} alt={userName} />
+                <AvatarImage src={user?.avatar?.url || ""} alt={userName} />
                 <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
                   {initials}
                 </AvatarFallback>

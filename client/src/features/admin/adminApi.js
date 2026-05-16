@@ -31,6 +31,10 @@ export function rejectComplaint(id, requestBody) {
   return unwrap(apiClient.post(`/admin/complaints/${id}/reject`, requestBody));
 }
 
+export function updateComplaintPriority(id, priority) {
+  return unwrap(apiClient.patch(`/admin/complaints/${id}/priority`, { priority }));
+}
+
 export function assignComplaint(id, requestBody) {
   return unwrap(apiClient.post(`/admin/complaints/${id}/assign`, requestBody));
 }

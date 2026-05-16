@@ -6,6 +6,7 @@ export const ComplaintFormSchema = z.object({
   title: z.string().trim().min(5, "Title must be at least 5 characters."),
   department: z.string().trim().min(1, "Please select a department."),
   description: z.string().trim().min(20, "Description must be at least 20 characters."),
+  suggestedPriority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
   attachment: fileSchema,
 });
 
@@ -20,6 +21,7 @@ export function buildComplaintPayload(values) {
     formData.append("title", values.title);
     formData.append("department", values.department);
     formData.append("description", values.description);
+    formData.append("suggestedPriority", values.suggestedPriority || "medium");
     formData.append("attachment", values.attachment);
     return formData;
   }

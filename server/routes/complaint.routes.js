@@ -7,6 +7,7 @@ import {
   updateComplaint,
   deleteComplaint,
   getDepartments,
+  suggestPriority,
 } from "../controllers/complaint.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { uploadSingle } from "../middleware/upload.middleware.js";
@@ -19,6 +20,7 @@ router.get("/departments", getDepartments);
 router.post("/", authMiddleware, uploadSingle, createComplaint);
 router.get("/me/pending", authMiddleware, getMyPendingComplaints);
 router.get("/me", authMiddleware, getMyComplaints);
+router.patch("/:id/suggest-priority", authMiddleware, suggestPriority);
 router.get("/:id", authMiddleware, getComplaintById);
 router.put("/:id", authMiddleware, uploadSingle, updateComplaint);
 router.delete("/:id", authMiddleware, deleteComplaint);

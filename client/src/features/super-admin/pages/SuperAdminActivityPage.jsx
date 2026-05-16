@@ -18,7 +18,7 @@ const getUserLabel = (user) => {
 const getDepartmentLabel = (department) => {
   if (!department) return "—";
   if (typeof department === "string") return department;
-  return department.name ? `${department.name} • ${department._id}` : department._id || "—";
+  return department.name || "—";
 };
 
 export function SuperAdminActivityPage() {

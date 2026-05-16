@@ -37,18 +37,25 @@ export function updateComplaint(id, payload) {
   );
 }
 
+export function suggestComplaintPriority(id, priority) {
+  return unwrap(apiClient.patch(`/complaints/${id}/suggest-priority`, { priority }));
+}
+
 export function fetchUserProfile() {
   return unwrap(apiClient.get("/user/profile"));
 }
 
 export function updateUserProfile(payload) {
-  const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
+  // Convert to FormData if avatar file is present
+  if (payload.avatar && payload.avatar instanceof File) {
+    const formData = new FormData();
+    formData.append("fullName", payload.fullName);
+    formData.append("avatar", payload.avatar);
+    return unwrap(apiClient.put("/user/profile", formData));
+  }
 
-  return unwrap(
-    apiClient.put("/user/profile", payload, {
-      headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
-    })
-  );
+  // Send as JSON if no avatar file
+  return unwrap(apiClient.put("/user/profile", payload));
 }
 
 export function fetchUserNotifications() {

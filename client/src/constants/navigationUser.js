@@ -3,7 +3,7 @@ import {
   MessageSquare,
   FileText,
   Bell,
-  User,
+  UserCircle2,
 } from "lucide-react";
 
 export const userNavigation = [
@@ -26,15 +26,15 @@ export const userNavigation = [
     icon: FileText,
   },
   {
-    group: "Account",
+    group: "Account Settings",
     label: "Notifications",
     href: "/user/notifications",
     icon: Bell,
   },
   {
-    group: "Account",
+    group: "Account Settings",
     label: "Profile",
     href: "/user/profile",
-    icon: User,
+    icon: UserCircle2,
   },
 ];

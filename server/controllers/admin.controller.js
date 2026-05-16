@@ -98,6 +98,53 @@ export const rejectComplaint = asyncHandler(async (req, res) => {
   return successResponse(res, 200, "Complaint rejected", complaint);
 });
 
+export const updatePriority = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+
+  if (!priority) return errorResponse(res, 400, "Priority is required");
+  if (!["low", "medium", "high", "urgent"].includes(priority)) {
+    return errorResponse(res, 400, "Invalid priority value");
+  }
+
+  // Admins can update priority
+  if (req.user.role !== "Admin" && req.user.role !== "SuperAdmin") {
+    return errorResponse(res, 403, "Only admins can set complaint priority");
+  }
+
+  const complaint = await Complaint.findById(id);
+  if (!complaint) return errorResponse(res, 404, "Complaint not found");
+
+  // Departmental scoping for admins
+  if (req.user.role === "Admin") {
+    if (!req.user.department) return errorResponse(res, 403, "Admin user has no department assigned");
+    if (complaint.department.toString() !== req.user.department.toString()) {
+      return errorResponse(res, 403, "Forbidden");
+    }
+  }
+
+  complaint.priority = priority;
+  complaint.priorityLastUpdatedBy = req.user._id;
+
+  // If critical priority, set alert and 24-hour due date
+  if (priority === "urgent") {
+    complaint.priorityAlert = true;
+    complaint.dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+  } else {
+    complaint.priorityAlert = false;
+  }
+
+  complaint.timeline.push({
+    action: "priority_updated",
+    performedBy: req.user._id,
+    note: `Priority set to ${priority}${complaint.suggestedPriority ? ` (overrides suggested: ${complaint.suggestedPriority})` : ""}`,
+  });
+
+  await complaint.save();
+
+  return successResponse(res, 200, "Priority updated", complaint);
+});
+
 export const assignComplaint = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { staffId } = req.body;

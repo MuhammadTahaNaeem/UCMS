@@ -6,13 +6,36 @@ import { statusClasses } from "@/constants/theme";
 import { Card } from "@/components/ui/card";
 import { useComplaintDetails } from "@/features/user/hooks/useComplaintDetails";
 import { formatDateTime, getStatusTimelineEntries, normalizeStatus } from "@/features/user/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { suggestComplaintPriority } from "@/features/user/userApi";
+import { useToast } from "@/components/ui/toast";
+import { UserPriorityDropdown } from "@/features/user/components/UserPriorityDropdown";
+import { userQueryKeys } from "@/features/user/userQueryKeys";
 
 export function ComplaintDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: complaintResponse, isLoading } = useComplaintDetails(id);
 
   const complaint = complaintResponse?.data;
+
+  const priorityMutation = useMutation({
+    mutationFn: (priority) => suggestComplaintPriority(id, priority),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.complaintDetail(id) });
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.complaints });
+      toast({ title: "Success", description: "Priority suggestion submitted." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed",
+        description: error?.response?.data?.message || "Unable to suggest priority.",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading) {
     return <div className="py-12 text-center text-muted-foreground">Loading complaint details...</div>;
@@ -88,9 +111,24 @@ export function ComplaintDetailsPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <MetaItem label="Department" value={complaint.department?.name || "—"} />
                 <MetaItem label="Assigned Staff" value={complaint.assignedTo?.fullName || "Not assigned"} />
+                <PriorityMetaItem 
+                  suggestedPriority={complaint.suggestedPriority} 
+                  finalPriority={complaint.priority} 
+                />
                 <MetaItem label="Last Updated" value={formatDateTime(complaint.updatedAt)} />
                 <MetaItem label="Attachments" value={complaint.attachments?.length ? `${complaint.attachments.length} file(s)` : "None"} />
               </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border shadow-sm">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Suggest Priority</h2>
+              <UserPriorityDropdown
+                currentSuggestedPriority={complaint.suggestedPriority || "medium"}
+                onSuggestPriority={priorityMutation.mutate}
+                isUpdating={priorityMutation.isPending}
+              />
             </div>
           </Card>
 
@@ -194,6 +232,51 @@ function MetaItem({ label, value }) {
     <div className="rounded-lg border border-border bg-background p-4">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
+    </div>
+  );
+}
+
+const PRIORITY_COLORS = {
+  low: { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
+  medium: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
+  high: { bg: "bg-orange-100", text: "text-orange-800", border: "border-orange-300" },
+  urgent: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
+};
+
+const PRIORITY_LABELS = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  urgent: "Critical",
+};
+
+function PriorityBadge({ priority }) {
+  if (!priority) return null;
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium;
+  const label = PRIORITY_LABELS[priority] || priority;
+  return (
+    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${colors.bg} ${colors.text} border ${colors.border}`}>
+      {label}
+    </span>
+  );
+}
+
+function PriorityMetaItem({ suggestedPriority, finalPriority }) {
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">Priority</p>
+      <div className="mt-2 flex flex-col gap-2">
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Your Suggestion:</p>
+          <PriorityBadge priority={suggestedPriority || "medium"} />
+        </div>
+        {finalPriority && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Admin Decision:</p>
+            <PriorityBadge priority={finalPriority} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

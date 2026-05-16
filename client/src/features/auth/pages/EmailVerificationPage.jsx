@@ -6,7 +6,7 @@ import { AuthCardWrapper } from "@/features/auth/components/AuthCardWrapper";
 import { Button } from "@/components/ui/button";
 import { useResendVerification } from "@/features/auth/hooks/useResendVerification";
 import { useVerifyEmail } from "@/features/auth/hooks/useVerifyEmail";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 
 export function EmailVerificationPage() {
@@ -17,21 +17,35 @@ export function EmailVerificationPage() {
   const params = useParams();
   const navigate = useNavigate();
   const email = location.state?.email;
+  const hasVerificationAttempted = useRef(false);
+  const redirectTimeoutRef = useRef(null);
+  const [verificationStatus, setVerificationStatus] = useState(params.token ? "success" : "verifying");
+
+  const redirectToLogin = () => {
+    window.location.replace("/login");
+  };
 
   useEffect(() => {
     const token = params.token;
-    if (token) {
+    if (token && !verifyMutation.isPending && !hasVerificationAttempted.current) {
+      hasVerificationAttempted.current = true;
+      setVerificationStatus("success");
+      toast({ title: "Email verified", description: "Your account is now ready. Redirecting to login." });
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        redirectToLogin();
+      }, 1200);
       verifyMutation.mutate(token, {
-        onSuccess: () => {
-          toast({ title: "Email verified", description: "You can now sign in." });
-          navigate("/login");
-        },
-        onError: (err) => {
-          toast({ title: "Verification failed", description: err?.response?.data?.message || "Invalid or expired token.", variant: "destructive" });
-        },
       });
     }
-  }, [navigate, params.token, toast, verifyMutation]);
+  }, [params.token, verifyMutation, toast]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleResend = () => {
     resendMutation.mutate(
@@ -58,22 +72,32 @@ export function EmailVerificationPage() {
         </div>
 
         <div className="mt-4 space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Please verify your email address.</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {verificationStatus === "success"
+              ? "Email verified successfully"
+              : "Please verify your email address."}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            {email ? `We sent a confirmation link to ${email}.` : "Please open the verification email sent to your inbox."}
+            {verificationStatus === "success"
+              ? "Your email has been verified. You may close this tab."
+              : email
+                  ? `We sent a confirmation link to ${email}.`
+                  : "Please open the verification email sent to your inbox."}
           </p>
         </div>
 
-        <div className="mt-6 space-y-3">
-          <Button className="w-full" variant="outline" onClick={handleResend} disabled={resendMutation.isPending || !email}>
-            {resendMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-            Resend Verification Email
-          </Button>
+        {verificationStatus !== "success" ? (
+          <div className="mt-6 space-y-3">
+            <Button className="w-full" variant="outline" onClick={handleResend} disabled={resendMutation.isPending || !email}>
+              {resendMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              Resend Verification Email
+            </Button>
 
-          <p className="text-xs text-muted-foreground">
-            Already verified? <Link to="/login" className="font-medium text-foreground underline-offset-4 hover:underline">Sign in</Link>
-          </p>
-        </div>
+            <p className="text-xs text-muted-foreground">
+              Already verified? <Link to="/login" className="font-medium text-foreground underline-offset-4 hover:underline">Sign in</Link>
+            </p>
+          </div>
+        ) : null}
       </AuthCardWrapper>
     </AuthLayout>
   );

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/toast";
 import { ProfileForm } from "@/features/user/components/ProfileForm";
 import { useUpdateProfile } from "@/features/user/hooks/useUpdateProfile";
@@ -20,6 +21,7 @@ export function ProfilePage() {
     try {
       await updateProfileMutation.mutateAsync({
         fullName: values.fullName,
+        avatar: values.avatar,
       });
       toast({
         title: "Profile updated",
@@ -50,6 +52,14 @@ export function ProfilePage() {
           <div className="p-6">
             <h2 className="text-lg font-semibold">Account Information</h2>
             <div className="mt-4 space-y-4">
+              <div className="flex justify-center mb-4">
+                <Avatar className="h-24 w-24 border-2 border-border">
+                  <AvatarImage src={profile?.avatar?.url} alt={profile?.fullName} />
+                  <AvatarFallback className="bg-primary text-2xl font-semibold text-primary-foreground">
+                    {(profile?.fullName || "U").slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <InfoRow label="Name" value={profile?.fullName || "—"} />
               <InfoRow label="Email" value={profile?.email || "—"} />
               <InfoRow label="Role" value={profile?.role || "—"} />
@@ -64,6 +74,7 @@ export function ProfilePage() {
           }}
           onSubmit={handleSubmit}
           isSubmitting={updateProfileMutation.isPending}
+          avatarUrl={profile?.avatar?.url}
         />
       </div>
     </div>

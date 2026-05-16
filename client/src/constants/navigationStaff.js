@@ -2,7 +2,7 @@ import {
   Home,
   CheckSquare,
   ClipboardList,
-  User,
+  UserCircle2,
 } from "lucide-react";
 
 export const staffNavigation = [
@@ -19,9 +19,9 @@ export const staffNavigation = [
     icon: CheckSquare,
   },
   {
-    group: "Account",
+    group: "Account Settings",
     label: "Profile",
     href: "/staff/profile",
-    icon: User,
+    icon: UserCircle2,
   },
 ];

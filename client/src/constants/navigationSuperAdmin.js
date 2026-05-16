@@ -1,4 +1,4 @@
-import { ShieldCheck, Users, Activity, Building2, UserPlus } from "lucide-react";
+import { ShieldCheck, Users, Activity, Building2, UserPlus, Settings2, UserCircle2 } from "lucide-react";
 
 export const superAdminNavigation = [
   {
@@ -29,11 +29,13 @@ export const superAdminNavigation = [
     group: "Management",
     label: "Settings",
     href: "/super-admin/settings",
+    icon: Settings2,
   },
   {
-    group: "Account",
+    group: "Account Settings",
     label: "Profile",
     href: "/super-admin/profile",
+    icon: UserCircle2,
   },
   {
     group: "Oversight",

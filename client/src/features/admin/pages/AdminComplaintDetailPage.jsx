@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { FileDown, Image as ImageIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared";
 import { useToast } from "@/components/ui/toast";
 import { formatDate, normalizeStatus } from "@/features/user/utils";
@@ -15,10 +13,34 @@ import {
   fetchComplaintDetail,
   approveComplaint,
   rejectComplaint,
-  fetchStaffMembers,
-  assignComplaint,
+  updateComplaintPriority,
 } from "@/features/admin/adminApi";
 import { adminQueryKeys } from "@/features/admin/adminQueryKeys";
+import { PriorityDropdown } from "@/features/admin/components/PriorityDropdown";
+
+const PRIORITY_COLORS = {
+  low: { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
+  medium: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
+  high: { bg: "bg-orange-100", text: "text-orange-800", border: "border-orange-300" },
+  urgent: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
+};
+
+const PRIORITY_LABELS = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  urgent: "Critical",
+};
+
+function PriorityBadge({ priority }) {
+  const colors = PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium;
+  const label = PRIORITY_LABELS[priority] || priority;
+  return (
+    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${colors.bg} ${colors.text} border ${colors.border}`}>
+      {label}
+    </span>
+  );
+}
 
 export default function AdminComplaintDetailPage() {
   const { id } = useParams();
@@ -26,7 +48,6 @@ export default function AdminComplaintDetailPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [rejectReason, setRejectReason] = useState("");
-  const [selectedStaffId, setSelectedStaffId] = useState("");
 
   const { data: complaintResponse, isLoading: isComplaintLoading } = useQuery({
     queryKey: adminQueryKeys.complaintDetail(id),
@@ -34,21 +55,8 @@ export default function AdminComplaintDetailPage() {
     enabled: Boolean(id),
   });
 
-  const { data: staffResponse } = useQuery({
-    queryKey: adminQueryKeys.staff,
-    queryFn: fetchStaffMembers,
-  });
-
   const complaint = complaintResponse?.data;
-  const staff = useMemo(() => staffResponse?.data ?? [], [staffResponse?.data]);
   const canApproveOrReject = complaint?.status === "pending";
-  const canAssign = !complaint?.assignedTo && ["approved", "in_progress"].includes(complaint?.status);
-
-  const availableStaff = useMemo(() => {
-    const deptId = complaint?.department?._id;
-    if (!deptId) return staff;
-    return staff.filter((member) => member.department?._id === deptId || member.department === deptId);
-  }, [staff, complaint?.department?._id]);
 
   const refreshComplaint = () => {
     queryClient.invalidateQueries({ queryKey: adminQueryKeys.complaintDetail(id) });
@@ -88,16 +96,16 @@ export default function AdminComplaintDetailPage() {
     },
   });
 
-  const assignMutation = useMutation({
-    mutationFn: () => assignComplaint(id, { staffId: selectedStaffId }),
+  const priorityMutation = useMutation({
+    mutationFn: (priority) => updateComplaintPriority(id, priority),
     onSuccess: () => {
       refreshComplaint();
-      toast({ title: "Assigned", description: "Complaint assigned to staff member." });
+      toast({ title: "Priority updated", description: "Complaint priority has been updated." });
     },
     onError: (error) => {
       toast({
-        title: "Assign failed",
-        description: error?.response?.data?.message || "Unable to assign complaint.",
+        title: "Priority update failed",
+        description: error?.response?.data?.message || "Unable to update priority.",
         variant: "destructive",
       });
     },
@@ -133,7 +141,9 @@ export default function AdminComplaintDetailPage() {
               <p className="mt-2 text-sm text-muted-foreground">{complaint.description}</p>
               <div className="mt-4 flex flex-wrap gap-2 text-sm">
                 <StatusBadge status={normalizeStatus(complaint.status)} />
-                <span className="rounded-md bg-muted px-2 py-1">Priority: {complaint.priority || "medium"}</span>
+                {complaint.priority && (
+                  <PriorityBadge priority={complaint.priority} />
+                )}
                 <span className="rounded-md bg-muted px-2 py-1">Submitted: {formatDate(complaint.createdAt)}</span>
               </div>
             </CardContent>
@@ -256,60 +266,32 @@ export default function AdminComplaintDetailPage() {
           </Card>
 
           <Card>
-            <CardContent className="p-3">
-              <Tabs defaultValue="assign">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="assign">Assign Staff</TabsTrigger>
-                  <TabsTrigger value="status">Status</TabsTrigger>
-                </TabsList>
+            <CardHeader>
+              <CardTitle className="text-sm">Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground">Status: {normalizeStatus(complaint.status)}</p>
+                <p>Department: {complaint.department?.name || "—"}</p>
+              </div>
 
-                <TabsContent value="assign" className="mt-3 space-y-3">
-                  {!complaint.assignedTo ? (
-                    <div className="flex flex-col gap-2">
-                      <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select staff to assign">
-                            {selectedStaffId
-                              ? availableStaff.find((m) => m._id === selectedStaffId)?.fullName
-                              : "Select staff to assign"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableStaff.map((member) => (
-                            <SelectItem key={member._id} value={member._id}>
-                              {member.fullName} — {member.department?.name || "N/A"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          if (!selectedStaffId) {
-                            toast({ title: "Staff required", description: "Select a staff member to assign.", variant: "destructive" });
-                            return;
-                          }
-                          assignMutation.mutate();
-                        }}
-                        disabled={assignMutation.isPending || !canAssign}
-                      >
-                        Assign to staff
-                      </Button>
-                      {!canAssign ? (
-                        <p className="text-xs text-muted-foreground">Approve the complaint before assigning staff.</p>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">This complaint is already assigned to staff.</p>
-                  )}
-                </TabsContent>
+              {complaint.suggestedPriority && (
+                <div className="border-t pt-3">
+                  <p className="text-xs font-medium text-gray-600 mb-2">User Suggested Priority:</p>
+                  <PriorityBadge priority={complaint.suggestedPriority} />
+                </div>
+              )}
 
-                <TabsContent value="status" className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  <p>Status: {normalizeStatus(complaint.status)}</p>
-                  <p>Department: {complaint.department?.name || "—"}</p>
-                  <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
-                </TabsContent>
-              </Tabs>
+              <div className="border-t pt-3">
+                <p className="text-xs font-medium text-gray-600 mb-2">Set Final Priority:</p>
+                <PriorityDropdown
+                  currentPriority={complaint.priority}
+                  onUpdatePriority={priorityMutation.mutate}
+                  isUpdating={priorityMutation.isPending}
+                />
+              </div>
+
+              <Button variant="outline" onClick={() => navigate(-1)} className="w-full">Back</Button>
             </CardContent>
           </Card>
         </aside>

@@ -225,7 +225,7 @@ function SidebarPanel({
       <div className="mt-auto border-t border-border p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9 border border-border">
-            <AvatarImage src={user?.avatarUrl || ""} alt={userName} />
+            <AvatarImage src={user?.avatar?.url || ""} alt={userName} />
             <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
               {initials || roleName[0]}
             </AvatarFallback>
