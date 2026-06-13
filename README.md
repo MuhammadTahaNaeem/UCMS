@@ -50,26 +50,14 @@ UCMS/
 
 ### 1) Authentication flow
 
-- A user registers from the auth pages in `client/src/features/auth/`.
-- The backend creates the account and sends an email verification link.
-- After verification, the user can log in and access the role dashboard.
-- JWT cookies are used for session-based access.
 
 ### 2) Complaint flow
 
-- Users create a complaint from the user area.
-- The server saves the complaint in MongoDB and generates a complaint ID like `UCMS-2026-C846C2`.
-- Admins and relevant staff receive realtime updates and notifications.
-- Staff update progress, upload proof, and resolve complaints.
-- Users can view the complaint timeline, status, and attachments.
 
 ### 3) Realtime updates
 
-- The frontend connects to Socket.IO after login.
-- The server emits events for complaint creation, assignment, status changes, and notifications.
-- This keeps the UI updated without manual refresh.
 
-## Main Frontend Files
+Password reset and email verification links use the browser's request origin first, then `FRONTEND_URL`, then `CLIENT_URL`, and finally the current request host. This means LAN requests automatically generate network-based links when the frontend is opened through the local IP.
 
 - `client/src/main.jsx`: application bootstrap with providers.
 - `client/src/App.jsx`: route setup and protected role-based routing.
@@ -124,6 +112,7 @@ Create `server/.env`:
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+FRONTEND_URL=http://localhost:5173
 CLIENT_ORIGIN=http://localhost:5173
 CLIENT_URL=http://localhost:5173
 JWT_SECRET=your_jwt_secret
@@ -197,11 +186,14 @@ npm run dev
 http://<your-PC-IP>:5173
 ```
 
-If the API does not respond, update both environment files to use your PC IP instead of `localhost`.
+Password reset and email verification links use the browser's request origin first, then `FRONTEND_URL`, then `CLIENT_URL`, and finally the current request host. That keeps LAN requests on the network address instead of rewriting links by hand.
+
+For LAN testing, update the frontend-related values in `server/.env` to match the address used by other devices:
 
 Example:
 
 ```env
+FRONTEND_URL=http://192.168.1.8:5173
 CLIENT_ORIGIN=http://192.168.1.8:5173
 CLIENT_URL=http://192.168.1.8:5173
 VITE_API_URL=http://192.168.1.8:5000/api

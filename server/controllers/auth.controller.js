@@ -10,6 +10,7 @@ const strongPasswordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const isStudentEmail = (email) => studentEmailPattern.test(String(email || "").trim());
 const isStrongPassword = (password) => strongPasswordPattern.test(String(password || ""));
+const getFrontendUrl = (req) => (req.get("origin") || process.env.FRONTEND_URL || process.env.CLIENT_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -24,12 +25,11 @@ export const registerUser = asyncHandler(async (req, res) => {
   const token = user.createEmailVerificationToken();
   await user.save({ validateBeforeSave: false });
 
-  const verificationUrl = `${process.env.CLIENT_URL}/email-verification/${token}`;
+  const verificationUrl = `${getFrontendUrl(req)}/email-verification/${token}`;
   const sendResult = await sendEmail(user.email, "verifyEmail", [verificationUrl, user.fullName]);
 
   const responseData = { id: user._id, email: user.email };
   if (sendResult?.previewUrl) responseData.emailPreview = sendResult.previewUrl;
-  // In development return the verification URL so devs can verify without SMTP
   if (process.env.NODE_ENV !== "production") responseData.verificationUrl = verificationUrl;
 
   return successResponse(res, 201, "User registered. Please verify your email.", responseData);
@@ -88,7 +88,7 @@ export const resendVerification = asyncHandler(async (req, res) => {
 
   const token = user.createEmailVerificationToken();
   await user.save({ validateBeforeSave: false });
-  const verificationUrl = `${process.env.CLIENT_URL}/email-verification/${token}`;
+  const verificationUrl = `${getFrontendUrl(req)}/email-verification/${token}`;
   await sendEmail(user.email, "verifyEmail", [verificationUrl, user.fullName]);
   return successResponse(res, 200, "Verification email sent");
 });
@@ -101,7 +101,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   const token = user.createPasswordResetToken();
   await user.save({ validateBeforeSave: false });
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${token}`;
+  const resetUrl = `${getFrontendUrl(req)}/reset-password/${token}`;
   await sendEmail(user.email, "resetPassword", [resetUrl, user.fullName]);
   return successResponse(res, 200, "Password reset email sent");
 });
