@@ -17,12 +17,11 @@ const resolveDepartmentInput = async (departmentInput) => {
   return Department.findOne({ name: departmentInput });
 };
 
-const findComplaintByIdentifier = async (identifier) => {
+const findComplaintByIdentifier = (identifier) => {
   if (!identifier) return null;
 
   if (identifier.match?.(/^[0-9a-fA-F]{24}$/)) {
-    const complaint = await Complaint.findById(identifier);
-    if (complaint) return complaint;
+    return Complaint.findById(identifier);
   }
 
   return Complaint.findOne({ complaintId: identifier });
@@ -96,7 +95,9 @@ export const getMyComplaints = asyncHandler(async (req, res) => {
 
 export const getComplaintById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const complaint = await findComplaintByIdentifier(id).populate("department assignedTo assignedBy submittedBy");
+  const complaint = await findComplaintByIdentifier(id)
+    .populate("department assignedTo assignedBy submittedBy")
+    .populate("timeline.performedBy");
   if (!complaint) return errorResponse(res, 404, "Complaint not found");
   
   // Authorization checks based on role
@@ -122,10 +123,10 @@ export const getComplaintById = asyncHandler(async (req, res) => {
 
 export const updateComplaint = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const complaint = await findComplaintByIdentifier(id);
+  const complaint = await findComplaintByIdentifier(id).populate("submittedBy");
   if (!complaint) return errorResponse(res, 404, "Complaint not found");
   if (complaint.status !== "pending") return errorResponse(res, 400, "Only pending complaints can be updated");
-  if (complaint.submittedBy.toString() !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
+  if (complaint.submittedBy._id.toString() !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
 
   const { title, description, department } = req.body;
   if (title) complaint.title = title;
@@ -149,10 +150,10 @@ export const updateComplaint = asyncHandler(async (req, res) => {
 
 export const deleteComplaint = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const complaint = await findComplaintByIdentifier(id);
+  const complaint = await findComplaintByIdentifier(id).populate("submittedBy");
   if (!complaint) return errorResponse(res, 404, "Complaint not found");
   if (complaint.status !== "pending") return errorResponse(res, 400, "Only pending complaints can be deleted");
-  if (complaint.submittedBy.toString() !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
+  if (complaint.submittedBy._id.toString() !== req.user._id.toString()) return errorResponse(res, 403, "Forbidden");
 
   await complaint.remove();
   return successResponse(res, 200, "Complaint deleted");
@@ -179,11 +180,11 @@ export const suggestPriority = asyncHandler(async (req, res) => {
     return errorResponse(res, 400, "Invalid priority value");
   }
 
-  const complaint = await findComplaintByIdentifier(id);
+  const complaint = await findComplaintByIdentifier(id).populate("submittedBy");
   if (!complaint) return errorResponse(res, 404, "Complaint not found");
 
   // Only the user who submitted the complaint can suggest priority
-  if (complaint.submittedBy.toString() !== req.user._id.toString()) {
+  if (complaint.submittedBy._id.toString() !== req.user._id.toString()) {
     return errorResponse(res, 403, "Only the complaint submitter can suggest priority");
   }
 

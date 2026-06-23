@@ -35,7 +35,9 @@ export const getPendingQueue = asyncHandler(async (req, res) => {
 
 export const getComplaintDetail = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const complaint = await Complaint.findById(id).populate("department submittedBy assignedTo assignedBy timeline.performedBy");
+  const complaint = await Complaint.findById(id)
+    .populate("department submittedBy assignedTo assignedBy")
+    .populate("timeline.performedBy");
   if (!complaint) return errorResponse(res, 404, "Complaint not found");
   // Departmental admin restriction
   if (req.user.role === "Admin") {
